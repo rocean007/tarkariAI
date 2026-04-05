@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "env": {
+    "TARKARI_AI_BASE_URL": "@tarkari-ai-base-url",
+    "TARKARI_AI_API_KEY": "@tarkari-ai-api-key",
+    "TARKARI_AI_MODEL": "@tarkari-ai-model",
+    "API_SECRET_SALT": "@api-secret-salt",
+    "VALID_API_KEYS": "@valid-api-keys",
+    "ALLOWED_ORIGINS": "@allowed-origins",
+    "SYSTEM_PROMPT": "@system-prompt"
+  }
+}
