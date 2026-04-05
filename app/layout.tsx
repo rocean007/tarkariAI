@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_APP_NAME || "Tarkari AI Assistant",
   description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Your personal Tarkari AI assistant",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.png",
   },
 };
 
