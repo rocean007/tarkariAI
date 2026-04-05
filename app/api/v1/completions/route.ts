@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
   try {
     if (stream) {
       // Streaming response (SSE format, OpenAI-compatible)
-      const aiStream = await aiClient.chat.completions.create({
+      const aiStream = await tarkariAIClient.chat.completions.create({
         model: model || DEFAULT_MODEL,
         messages: allMessages,
         stream: true,
