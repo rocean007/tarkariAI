@@ -2,7 +2,7 @@
 // Protected by API key authentication + CORS origin validation
 import { NextRequest } from "next/server";
 import { validateApiKey, corsHeaders, getOriginFromRequest } from "@/lib/auth";
-import { aiClient, DEFAULT_MODEL, SYSTEM_PROMPT } from "@/lib/ai";
+import { tarkariAIClient, DEFAULT_MODEL, SYSTEM_PROMPT } from "@/lib/ai";
 
 export const runtime = "nodejs";
 
