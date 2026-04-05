@@ -53,17 +53,14 @@ export function Sidebar({
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
+              overflow: "hidden",
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                stroke="var(--bg-primary)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <img
+              src="/favicon.png"
+              alt="AI Logo"
+              style={{ width: 22, height: 22, objectFit: "contain", display: "block" }}
+            />
           </div>
           <span
             className="font-display"

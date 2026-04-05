@@ -87,17 +87,14 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           justifyContent: "center",
           flexShrink: 0,
           marginTop: 2,
+          overflow: "hidden",
         }}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-            stroke="var(--accent)"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <img
+          src="/favicon.png"
+          alt="AI Avatar"
+          style={{ width: 20, height: 20, objectFit: "contain", display: "block" }}
+        />
       </div>
 
       <div style={{ flex: 1, minWidth: 0 }}>
