@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Non-streaming response
-      const completion = await aiClient.chat.completions.create({
+      const completion = await tarkariAIClient.chat.completions.create({
         model: model || DEFAULT_MODEL,
         messages: allMessages,
         stream: false,
