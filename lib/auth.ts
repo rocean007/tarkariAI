@@ -6,6 +6,9 @@ const VALID_API_KEYS = new Set(
     .map((k) => k.trim())
     .filter(Boolean)
 );
+const ALLOW_UNAUTHENTICATED =
+  process.env.ALLOW_UNAUTHENTICATED === "true" &&
+  process.env.NODE_ENV !== "production";
 
 export function validateApiKey(authHeader: string | null): {
   valid: boolean;
@@ -26,9 +29,11 @@ export function validateApiKey(authHeader: string | null): {
   }
 
   if (VALID_API_KEYS.size === 0) {
-    // No keys configured — allow all (development mode)
-    console.warn("⚠️  No VALID_API_KEYS configured. All requests allowed.");
-    return { valid: true };
+    if (ALLOW_UNAUTHENTICATED) {
+      console.warn("⚠️  No VALID_API_KEYS configured. Unauthenticated mode enabled.");
+      return { valid: true };
+    }
+    return { valid: false, error: "No API keys configured on server" };
   }
 
   if (!VALID_API_KEYS.has(key)) {
@@ -39,14 +44,20 @@ export function validateApiKey(authHeader: string | null): {
 }
 
 export function getOriginFromRequest(request: Request): string {
-  return (
-    request.headers.get("origin") ||
-    request.headers.get("referer") ||
-    "unknown"
-  );
+  const origin = request.headers.get("origin");
+  if (origin) return origin;
+
+  const referer = request.headers.get("referer");
+  if (!referer) return "";
+  try {
+    return new URL(referer).origin;
+  } catch {
+    return "";
+  }
 }
 
 export function isOriginAllowed(origin: string): boolean {
+  if (!origin) return false;
   const allowed = (process.env.ALLOWED_ORIGINS || "*")
     .split(",")
     .map((o) => o.trim())
@@ -60,6 +71,7 @@ export function corsHeaders(origin: string) {
   const allowed = isOriginAllowed(origin) ? origin : "";
   return {
     "Access-Control-Allow-Origin": allowed || "null",
+    Vary: "Origin",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",

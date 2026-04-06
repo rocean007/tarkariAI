@@ -1,11 +1,24 @@
 // app/api/chat/route.ts — Internal streaming chat endpoint (for the web UI)
 import { NextRequest } from "next/server";
 import { createChatStream } from "@/lib/ai";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const rate = enforceRateLimit(`ui:chat:${ip}`, Number.parseInt(process.env.UI_RATE_LIMIT_PER_MINUTE || "90", 10));
+    if (!rate.allowed) {
+      return new Response(JSON.stringify({ error: "Rate limit exceeded. Please retry later." }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(rate.retryAfterSeconds),
+        },
+      });
+    }
+
     const body = await request.json();
     const { messages } = body;
 

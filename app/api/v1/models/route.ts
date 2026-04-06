@@ -2,6 +2,7 @@
 import { NextRequest } from "next/server";
 import { validateApiKey, corsHeaders, getOriginFromRequest } from "@/lib/auth";
 import { DEFAULT_MODEL } from "@/lib/ai";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function OPTIONS(request: NextRequest) {
   const origin = getOriginFromRequest(request);
@@ -18,6 +19,19 @@ export async function GET(request: NextRequest) {
     return new Response(JSON.stringify({ error: { message: error } }), {
       status: 401,
       headers: { ...headers, "Content-Type": "application/json" },
+    });
+  }
+  const authToken = auth?.slice(7).trim() || "anonymous";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rate = enforceRateLimit(`v1:models:${authToken}:${ip}`, Number.parseInt(process.env.RATE_LIMIT_MODELS_PER_MINUTE || "120", 10));
+  if (!rate.allowed) {
+    return new Response(JSON.stringify({ error: { message: "Rate limit exceeded" } }), {
+      status: 429,
+      headers: {
+        ...headers,
+        "Content-Type": "application/json",
+        "Retry-After": String(rate.retryAfterSeconds),
+      },
     });
   }
 
