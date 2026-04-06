@@ -1,4 +1,4 @@
-// app/api/v1/completions/route.ts — External REST API (OpenAI-compatible)
+// app/api/v1/completions/route.ts — External REST API for chatbot clients
 // Protected by API key authentication + CORS origin validation
 import { NextRequest } from "next/server";
 import { validateApiKey, corsHeaders, getOriginFromRequest } from "@/lib/auth";
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
   try {
     if (stream) {
-      // Streaming response (SSE format, OpenAI-compatible)
+      // Streaming response (SSE format)
       const aiStream = await createChatStream(normalizedMessages, {
         model: model || DEFAULT_MODEL,
         max_tokens,
