@@ -437,20 +437,15 @@ data = response.json()
 print(data["choices"][0]["message"]["content"])`,
                 },
                 {
-                  lang: "OpenAI Python SDK (compatible)",
-                  code: `from openai import OpenAI  # Tarkari AI-compatible
-
-client = OpenAI(
-    api_key="YOUR_API_KEY",
-    base_url="${baseUrl}/api/v1",
-)
-
-response = client.chat.completions.create(
-    model="my-assistant",
-    messages=[{"role": "user", "content": "Hello!"}],
-)
-
-print(response.choices[0].message.content)`,
+                  lang: "cURL Streaming (SSE)",
+                  code: `curl -N -X POST "${baseUrl}/api/v1/completions" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "model": "my-assistant",
+    "messages": [{"role": "user", "content": "Write a short poem"}],
+    "stream": true
+  }'`,
                 },
               ].map((ex, i) => (
                 <div
@@ -514,8 +509,8 @@ print(response.choices[0].message.content)`,
               }}
             >
               {[
-                "Rate limits are determined by your Tarkari AI backend provider (OpenAI, HuggingFace, etc.)",
-                "The API is OpenAI-compatible — you can use the official OpenAI SDK by pointing it at this server for Tarkari AI.",
+                "Rate limits are configured on this server with RATE_LIMIT_PER_MINUTE and related environment variables.",
+                "Your model backend URL and credentials are configured through TARKARI_AI_BASE_URL and TARKARI_AI_API_KEY.",
                 "Streaming is supported via Server-Sent Events (SSE). Set stream: true in your request.",
                 "CORS is configured via the ALLOWED_ORIGINS environment variable.",
                 "All requests are logged server-side for monitoring purposes.",
