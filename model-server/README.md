@@ -30,6 +30,9 @@ export MODEL_NAME="your-fine-tuned-model-or-base-model"
 # export ADAPTER_PATH="/path/to/lora-adapters"
 # export MERGE_ADAPTERS=false   # set true to merge for faster inference
 
+# Optional guardrail
+export MAX_INPUT_TOKENS=4096   # truncate prompt to keep latency/cost predictable
+
 # Optional (server-side auth only):
 # export MODEL_API_KEY="your-model-server-key"
 ```

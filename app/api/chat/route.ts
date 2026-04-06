@@ -29,7 +29,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const stream = await createChatStream(messages);
+    // Basic payload hardening for production cost control.
+    const MAX_MESSAGES = 50;
+    const MAX_TOTAL_CHARS = 20000;
+    const normalized = messages
+      .filter(
+        (m: any) =>
+          m &&
+          (m.role === "user" || m.role === "assistant" || m.role === "system") &&
+          typeof m.content === "string"
+      )
+      .slice(-MAX_MESSAGES);
+
+    const totalChars = normalized.reduce((sum: number, m: any) => sum + m.content.length, 0);
+    if (normalized.length === 0 || totalChars > MAX_TOTAL_CHARS) {
+      return new Response(JSON.stringify({ error: "Invalid or too-large messages payload" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    const stream = await createChatStream(normalized, { signal: request.signal });
 
     const encoder = new TextEncoder();
     const readable = new ReadableStream({

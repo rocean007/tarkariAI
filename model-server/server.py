@@ -17,6 +17,7 @@ MODEL_DEVICE = os.environ.get("MODEL_DEVICE", "auto")  # "auto" or explicit like
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")  # optional auth for your model server
 
 DEFAULT_MAX_NEW_TOKENS = int(os.environ.get("DEFAULT_MAX_NEW_TOKENS", "512"))
+MAX_INPUT_TOKENS = int(os.environ.get("MAX_INPUT_TOKENS", "4096"))
 
 
 def _check_model_server_key(authorization: Optional[str]) -> None:
@@ -128,7 +129,7 @@ async def chat_completions(request: Request, authorization: Optional[str] = Head
     prompt = _build_chat_prompt(messages, system)
 
     # Tokenize prompt.
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=MAX_INPUT_TOKENS)
     # Only move tensors when we are not relying on device_map="auto".
     if MODEL_DEVICE != "auto":
         inputs = {k: v.to(model.device) for k, v in inputs.items()}

@@ -20,6 +20,7 @@ export type ChatRequestOptions = {
   max_tokens?: number;
   temperature?: number;
   system?: string;
+  signal?: AbortSignal;
 };
 
 export type ChatDeltaChunk = {
@@ -84,6 +85,7 @@ export async function createChatStream(
   const res = await fetch(`${MODEL_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: getModelHeaders(),
+    signal: options.signal,
     body: JSON.stringify({
       model: options.model || DEFAULT_MODEL,
       messages: buildMessages(messages, options.system),
@@ -139,6 +141,7 @@ export async function createChatCompletion(
   const res = await fetch(`${MODEL_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: getModelHeaders(),
+    signal: options.signal,
     body: JSON.stringify({
       model: options.model || DEFAULT_MODEL,
       messages: buildMessages(messages, options.system),

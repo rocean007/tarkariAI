@@ -80,20 +80,43 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Build validated messages array
-  const normalizedMessages = messages.map((m) => ({
-    role: m.role as "user" | "assistant" | "system",
-    content: m.content,
-  }));
+  // 3. Build validated messages array (production hardening)
+  const MAX_MESSAGES = 50;
+  const MAX_TOTAL_CHARS = 20000;
+
+  const normalizedMessages = (messages as any[])
+    .filter(
+      (m) =>
+        m &&
+        (m.role === "user" || m.role === "assistant" || m.role === "system") &&
+        typeof m.content === "string"
+    )
+    .slice(-MAX_MESSAGES)
+    .map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content as string,
+    }));
+
+  const totalChars = normalizedMessages.reduce((sum, m) => sum + m.content.length, 0);
+  if (normalizedMessages.length === 0 || totalChars > MAX_TOTAL_CHARS) {
+    return new Response(
+      JSON.stringify({ error: { message: "Invalid or too-large messages payload", type: "invalid_request_error" } }),
+      { status: 400, headers: { ...headers, "Content-Type": "application/json" } }
+    );
+  }
+
+  const safeMaxTokens = Math.max(1, Math.min(Number(max_tokens) || 2048, 2048));
+  const safeTemperature = Math.max(0, Math.min(Number(temperature) || 0.7, 2));
 
   try {
     if (stream) {
       // Streaming response (SSE format)
       const aiStream = await createChatStream(normalizedMessages, {
         model: model || DEFAULT_MODEL,
-        max_tokens,
-        temperature,
+        max_tokens: safeMaxTokens,
+        temperature: safeTemperature,
         system: system || SYSTEM_PROMPT,
+        signal: request.signal,
       });
 
       const encoder = new TextEncoder();
@@ -120,9 +143,10 @@ export async function POST(request: NextRequest) {
       // Non-streaming response
       const completion = await createChatCompletion(normalizedMessages, {
         model: model || DEFAULT_MODEL,
-        max_tokens,
-        temperature,
+        max_tokens: safeMaxTokens,
+        temperature: safeTemperature,
         system: system || SYSTEM_PROMPT,
+        signal: request.signal,
       });
 
       return new Response(JSON.stringify(completion), {
