@@ -20,8 +20,15 @@ pip install -r requirements.txt
 ## 2) Configure environment
 
 ```bash
-export MODEL_NAME="your-fine-tuned-model-or-base-model"
 export MODEL_DEVICE="auto"   # or "cuda" / "cuda:0" (depending on your setup)
+
+# If you are using a full merged model:
+export MODEL_NAME="your-fine-tuned-model-or-base-model"
+
+# If you are using LoRA adapters (recommended output from your training):
+# export BASE_MODEL_NAME="unsloth/Llama-3.2-3B-Instruct-bnb-4bit-or-your-base"
+# export ADAPTER_PATH="/path/to/lora-adapters"
+# export MERGE_ADAPTERS=false   # set true to merge for faster inference
 
 # Optional (server-side auth only):
 # export MODEL_API_KEY="your-model-server-key"

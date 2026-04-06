@@ -10,6 +10,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStream
 app = FastAPI()
 
 MODEL_NAME = os.environ.get("MODEL_NAME", "unsloth/Llama-3.2-3B-Instruct-bnb-4bit")
+BASE_MODEL_NAME = os.environ.get("BASE_MODEL_NAME", MODEL_NAME)
+ADAPTER_PATH = os.environ.get("ADAPTER_PATH", "")  # optional: LoRA adapter directory
+MERGE_ADAPTERS = os.environ.get("MERGE_ADAPTERS", "false").lower() in ("1", "true", "yes")
 MODEL_DEVICE = os.environ.get("MODEL_DEVICE", "auto")  # "auto" or explicit like "cuda"
 MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")  # optional auth for your model server
 
@@ -67,19 +70,29 @@ def _build_chat_prompt(messages: List[Dict[str, Any]], system: Optional[str]) ->
     return "\n".join(parts)
 
 
-print(f"[model-server] Loading model: {MODEL_NAME}")
-tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_fast=True)
+print(f"[model-server] Loading base model: {BASE_MODEL_NAME}")
+tokenizer_source = ADAPTER_PATH if ADAPTER_PATH else BASE_MODEL_NAME
+tokenizer = AutoTokenizer.from_pretrained(tokenizer_source, use_fast=True)
 
-# Trust remote code is sometimes required for certain community models.
 device_map: Optional[str] = None
 if MODEL_DEVICE == "auto":
     device_map = "auto"
 
 model = AutoModelForCausalLM.from_pretrained(
-    MODEL_NAME,
+    BASE_MODEL_NAME,
     torch_dtype="auto",
     device_map=device_map,
 )
+
+if ADAPTER_PATH:
+    print(f"[model-server] Loading LoRA adapter from: {ADAPTER_PATH}")
+    from peft import PeftModel
+
+    model = PeftModel.from_pretrained(model, ADAPTER_PATH)
+    if MERGE_ADAPTERS:
+        print("[model-server] Merging adapters into base model...")
+        model = model.merge_and_unload()
+
 model.eval()
 print("[model-server] Model loaded.")
 

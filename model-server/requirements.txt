@@ -5,3 +5,4 @@ torch
 accelerate==1.0.1
 safetensors
 sentencepiece
+peft==0.12.0
