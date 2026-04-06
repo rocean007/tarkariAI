@@ -2,7 +2,8 @@
 // Protected by API key authentication + CORS origin validation
 import { NextRequest } from "next/server";
 import { validateApiKey, corsHeaders, getOriginFromRequest } from "@/lib/auth";
-import { tarkariAIClient, DEFAULT_MODEL, SYSTEM_PROMPT } from "@/lib/ai";
+import { createChatCompletion, createChatStream, DEFAULT_MODEL, SYSTEM_PROMPT } from "@/lib/ai";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -25,6 +26,30 @@ export async function POST(request: NextRequest) {
     return new Response(
       JSON.stringify({ error: { message: error, type: "invalid_request_error", code: "invalid_api_key" } }),
       { status: 401, headers: { ...headers, "Content-Type": "application/json" } }
+    );
+  }
+  const authToken = auth?.slice(7).trim() || "anonymous";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const rate = enforceRateLimit(`v1:completions:${authToken}:${ip}`);
+  if (!rate.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: {
+          message: "Rate limit exceeded. Please retry later.",
+          type: "rate_limit_error",
+          code: "rate_limit_exceeded",
+        },
+      }),
+      {
+        status: 429,
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          "Retry-After": String(rate.retryAfterSeconds),
+          "X-RateLimit-Limit": String(rate.limit),
+          "X-RateLimit-Remaining": String(rate.remaining),
+        },
+      }
     );
   }
 
@@ -55,25 +80,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Build messages array
-  const systemPrompt = system || SYSTEM_PROMPT;
-  const allMessages = [
-    { role: "system" as const, content: systemPrompt },
-    ...messages.map((m) => ({
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content,
-    })),
-  ];
+  // 3. Build validated messages array
+  const normalizedMessages = messages.map((m) => ({
+    role: m.role as "user" | "assistant" | "system",
+    content: m.content,
+  }));
 
   try {
     if (stream) {
       // Streaming response (SSE format, OpenAI-compatible)
-      const aiStream = await tarkariAIClient.chat.completions.create({
+      const aiStream = await createChatStream(normalizedMessages, {
         model: model || DEFAULT_MODEL,
-        messages: allMessages,
-        stream: true,
         max_tokens,
         temperature,
+        system: system || SYSTEM_PROMPT,
       });
 
       const encoder = new TextEncoder();
@@ -98,17 +118,21 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Non-streaming response
-      const completion = await tarkariAIClient.chat.completions.create({
+      const completion = await createChatCompletion(normalizedMessages, {
         model: model || DEFAULT_MODEL,
-        messages: allMessages,
-        stream: false,
         max_tokens,
         temperature,
+        system: system || SYSTEM_PROMPT,
       });
 
       return new Response(JSON.stringify(completion), {
         status: 200,
-        headers: { ...headers, "Content-Type": "application/json" },
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          "X-RateLimit-Limit": String(rate.limit),
+          "X-RateLimit-Remaining": String(rate.remaining),
+        },
       });
     }
   } catch (err: unknown) {
